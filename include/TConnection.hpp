@@ -26,6 +26,7 @@ class TConnection {
 
 		using tcp = boost::asio::ip::tcp;
 		using io_service = boost::asio::io_service;
+		using Message = MessageType;
 
 		///
 		///@brief Read Buffer
@@ -103,7 +104,7 @@ class TConnection {
 		///
 		/// User implementation point
 		///
-		virtual void	onMessage(const typename MessageType::Message &message) {(void)message;}
+		virtual void	onMessage(const Message &message) {(void)message;}
 
 		///
 		///@brief Virtual handler
@@ -119,7 +120,7 @@ class TConnection {
 		///@brief Writes message to the write buffer to enqueue for data transmission
 		///
 		///
-		void			send(const typename MessageType::Message &message)
+		void			send(const Message &message)
 		{
 			message.writeTo(_wBuffer);
 		}
@@ -200,8 +201,8 @@ class TConnection {
 						return;
 					}
 					_rBuffer.data.insert(_rBuffer.data.end(), _rBuffer.input.begin(), _rBuffer.input.begin() + bytes);
-					if (MessageType::hasMessage(_rBuffer.data))
-						onMessage(MessageType::extract(_rBuffer.data));
+					if (Message::hasMessage(_rBuffer.data))
+						onMessage(Message::extract(_rBuffer.data));
 					startReceive();
 				} catch(const std::exception& e) {
 					std::cerr << __func__ << ' ' << e.what() << "\r\n";
