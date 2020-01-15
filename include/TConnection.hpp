@@ -10,6 +10,7 @@
 
 #include <array>
 #include <vector>
+#include <iostream>
 #include <boost/asio.hpp>
 
 ///
