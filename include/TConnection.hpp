@@ -25,7 +25,7 @@ class TConnection {
 	public:
 
 		using tcp = boost::asio::ip::tcp;
-		using io_service = boost::asio::io_service;
+		using io_context = boost::asio::io_context;
 		using Message = MessageType;
 
 		///
@@ -46,10 +46,10 @@ class TConnection {
 		///
 		///@brief Construct a new TConnection object
 		///
-		///@param service asio io_service associated with the connection
+		///@param context asio io_context associated with the connection
 		///
-		TConnection(io_service &service):
-			_socket(service),
+		TConnection(io_context &context):
+			_socket(context),
 			_open(false)
 		{}
 
@@ -77,9 +77,9 @@ class TConnection {
 		void			onAccept()
 		{
 			_open = true;
-			startReceive();
-			startSend();
 			onConnect();
+			startReceive();
+			// startSend();
 		}
 
 		///
@@ -182,7 +182,7 @@ class TConnection {
 			_socket.connect(tcp::endpoint(boost::asio::ip::address::from_string(address), port));
 			onConnect();
 			startReceive();
-			startSend();
+			// startSend();
 		}
 
 	protected:

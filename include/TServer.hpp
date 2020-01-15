@@ -27,9 +27,9 @@ class TServer : public TICallbackHandler<ConnectionType> {
 		using Connection = ConnectionType;
 
 		using SessionHandle = std::shared_ptr<Connection>;
-		using MakeSession = std::make_shared<Connection>;
+		// using MakeSession = std::make_shared<Connection>;
 
-		using io_service = boost::asio::io_service;
+		using io_context = boost::asio::io_context;
 		using tcp = boost::asio::ip::tcp;
 
 		///
@@ -37,17 +37,17 @@ class TServer : public TICallbackHandler<ConnectionType> {
 		///
 		///@param port to listen on
 		///
-		TServer(int port, io_service &service):
-			_service(service),
-			_work(_service),
-			_incoming(_service)
+		TServer(int port, io_context &context):
+			_context(context),
+			_work(_context),
+			_incoming(_context)
 		{
-			tcp::resolver	resolver(_service);
+			tcp::resolver	resolver(_context);
 			tcp::endpoint	endpoint = *resolver.resolve(
 				"127.0.0.1",
 				std::to_string(port)
 			);
-			_incoming.open(endpoint.MessageType());
+			_incoming.open(endpoint.protocol());
 			_incoming.set_option(tcp::acceptor::reuse_address(true));
 			_incoming.bind(endpoint);
 			_incoming.listen(boost::asio::socket_base::max_connections);
@@ -61,21 +61,21 @@ class TServer : public TICallbackHandler<ConnectionType> {
 		///
 		virtual ~TServer()
 		{
-			_service.stop();
+			_context.stop();
 		}
 
 		///
 		///@brief Handles a connection event on connection
 		///
 		///
-		virtual void onConnect(ConnectionType &connection) override {(void)connection;}
+		virtual void onConnect(Connection &connection) override {(void)connection;}
 
 		///
 		///@brief Handles a message event on connection
 		///
 		///@param message message event data
 		///
-		virtual void onMessage(ConnectionType &connection, const MessageType &message) override
+		virtual void onMessage(Connection &connection, const typename Connection::Message &message) override
 		{
 			(void)connection;
 			(void)message;
@@ -86,13 +86,13 @@ class TServer : public TICallbackHandler<ConnectionType> {
 		///
 		///@param er  error event data
 		///
-		virtual void onError(ConnectionType &connection, const boost::system::error_code &er) override
+		virtual void onError(Connection &connection, const boost::system::error_code &er) override
 		{
 			(void)connection;
 			(void)er;
 		}
 
-		virtual void onDisconnect(ConnectionType &connection) override {(void)connection;}
+		virtual void onDisconnect(Connection &connection) override {(void)connection;}
 
 		///
 		///@brief
@@ -101,18 +101,22 @@ class TServer : public TICallbackHandler<ConnectionType> {
 		void	poll()
 		{
 			try {
-				_service.poll();
+				_context.poll();
 				removeClosedConnections();
 			} catch(const std::exception &e) {
 				std::cerr << e.what() << "\r\n";
 			}
 		}
-		// 	} catch(const std::exception& e) {
-		// 		_service.stop();
-		// 	}
-		// }
+
+		void	run()
+		{
+			while(true) {
+				poll();
+			}
+		}
 
 	protected:
+		std::vector<SessionHandle>	_connections;
 	private:
 
 		///
@@ -122,17 +126,17 @@ class TServer : public TICallbackHandler<ConnectionType> {
 		void	startAccept()
 		{
 			SessionHandle	newConnection;
-			if constexpr(std::is_base_of_v<TDelegatedConnection<typename ConnectionType::Message>, Connection)
-				newConnection = _connections.emplace_back(std::make_shared<Connection>(_service, *this));
+			if constexpr(std::is_base_of_v<TDelegatedConnection<typename ConnectionType::Message>, Connection>)
+				newConnection = _connections.emplace_back(std::make_shared<Connection>(_context, *this));
 			else
-				newConnection = _connections.emplace_back(std::make_shared<Connection>(_service));
+				newConnection = _connections.emplace_back(std::make_shared<Connection>(_context));
 			_incoming.async_accept(newConnection->getSocket(), [this, connection = newConnection](const boost::system::error_code &ec){
 				connection->onAccept();
 				startAccept();
 			});
 		}
-		io_service					&_service;
-		io_service::work			_work;
+		io_context					&_context;
+		io_context::work			_work;
 		tcp::acceptor				_incoming;
 
 		void	removeClosedConnections()
@@ -141,13 +145,11 @@ class TServer : public TICallbackHandler<ConnectionType> {
 				std::remove_if(_connections.begin(), _connections.end(), [](auto &connection){
 					return !connection->isOpen();
 				}),
-				_connections.end();
+				_connections.end()
 			);
 
 		}
 
-	protected:
-		std::vector<SessionHandle>	_connections;
 };
 
 template<typename T, bool isConnection>
@@ -163,5 +165,10 @@ struct ServerImpl<MessageType, false> {
 	using type = TServer<TDelegatedConnection<MessageType>>;
 };
 
+template<typename T>
+constexpr bool	isConnection = false;
+
+template<typename MessageType>
+constexpr bool	isConnection<TConnection<MessageType>> = true;
 
 #endif /* !TSERVER_HPP_ */

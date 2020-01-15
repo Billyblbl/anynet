@@ -46,7 +46,7 @@ class TICallbackHandler {
 		///
 		///@param message message event data
 		///
-		virtual void onMessage(Connection &connection, const typename ConnectionType &message) = 0;
+		virtual void onMessage(Connection &connection, const typename ConnectionType::Message &message) = 0;
 
 		///
 		///@brief Handles an error event on connection

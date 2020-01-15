@@ -22,9 +22,9 @@ namespace TCPNet
 	using Session = TDelegatedConnection<MessageType>;
 
 	template<typename T>
-	using Server = typename ServerImpl<T, std::is_base_of_v<TConnection<typename T::Message>, T>>::type;
+	using Server = typename ServerImpl<T, isConnection<T>>::type;
 
-} // namespace Net
+} // namespace TCPNet
 
 
 #endif /* !NET_HPP_ */

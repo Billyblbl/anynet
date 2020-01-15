@@ -29,16 +29,16 @@ class TDelegatedConnection : public TConnection<MessageType> {
 		///@brief Callback handler interface type as defined by MessageType
 		///
 		///
-		using HandlerType = TICallbackHandler<TConnection<MessageType>>;
+		using HandlerType = TICallbackHandler<TDelegatedConnection>;
 
 		///
 		///@brief Construct a new TDelegatedConnection object
 		///
-		///@param service asio io_service associated with the connection
+		///@param context asio io_context associated with the connection
 		///@param handler Callback handler object
 		///
-		TDelegatedConnection(boost::asio::io_service &service, HandlerType &handler):
-			TConnection<MessageType>(service),
+		TDelegatedConnection(boost::asio::io_context &context, HandlerType &handler):
+			TConnection<MessageType>(context),
 			_handler(&handler)
 		{}
 
@@ -83,7 +83,7 @@ class TDelegatedConnection : public TConnection<MessageType> {
 		///@brief Delegates message events management to handler
 		///
 		///
-		void	onMessage(const typename MessageType::Message &message) final
+		void	onMessage(const MessageType &message) final
 		{
 			_handler->onMessage(*this, message);
 		}
