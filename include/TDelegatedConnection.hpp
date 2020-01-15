@@ -105,6 +105,12 @@ class TDelegatedConnection : public TConnection<MessageType> {
 		{
 			_handler->onError(*this, er);
 		}
+
+		void	onDisconnect() final
+		{
+			_handler->onDisconnect(*this);
+		}
+
 	protected:
 	private:
 		HandlerType	*_handler;

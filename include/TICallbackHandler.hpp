@@ -55,6 +55,8 @@ class TICallbackHandler {
 		///
 		virtual void onError(Connection &connection, const boost::system::error_code &er) = 0;
 
+		virtual void onDisconnect(Connection &connection) = 0;
+
 	protected:
 	private:
 };
