@@ -125,6 +125,7 @@ class TConnection {
 		void			send(const Message &message)
 		{
 			message.writeTo(_wBuffer);
+			startSend();
 		}
 
 		///
@@ -205,7 +206,7 @@ class TConnection {
 					}
 					_rBuffer.data.insert(_rBuffer.data.end(), _rBuffer.input.begin(), _rBuffer.input.begin() + bytes);
 					if (Message::hasMessage(_rBuffer.data))
-						onMessage(Message::extract(_rBuffer.data));
+						onMessage(Message::extractFrom(_rBuffer.data));
 					startReceive();
 				} catch(const std::exception& e) {
 					std::cerr << __func__ << ' ' << e.what() << "\r\n";

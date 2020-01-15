@@ -27,7 +27,6 @@ class TServer : public TICallbackHandler<ConnectionType> {
 		using Connection = ConnectionType;
 
 		using SessionHandle = std::shared_ptr<Connection>;
-		// using MakeSession = std::make_shared<Connection>;
 
 		using io_context = boost::asio::io_context;
 		using tcp = boost::asio::ip::tcp;
@@ -39,7 +38,7 @@ class TServer : public TICallbackHandler<ConnectionType> {
 		///
 		TServer(int port, io_context &context):
 			_context(context),
-			_work(_context),
+			// _work(_context),
 			_incoming(_context)
 		{
 			tcp::resolver	resolver(_context);
@@ -125,19 +124,16 @@ class TServer : public TICallbackHandler<ConnectionType> {
 		///
 		void	startAccept()
 		{
-			SessionHandle	newConnection;
 			if constexpr(std::is_base_of_v<TDelegatedConnection<typename ConnectionType::Message>, Connection>)
-				newConnection = _connections.emplace_back(std::make_shared<Connection>(_context, *this));
+				_pending = std::make_shared<Connection>(_context, *this);
 			else
-				newConnection = _connections.emplace_back(std::make_shared<Connection>(_context));
-			_incoming.async_accept(newConnection->getSocket(), [this, connection = newConnection](const boost::system::error_code &ec){
+				_pending = std::make_shared<Connection>(_context);
+			_incoming.async_accept(_pending->getSocket(), [this, connection = _pending](const boost::system::error_code &ec){
+				_connections.emplace_back(_pending);
 				connection->onAccept();
 				startAccept();
 			});
 		}
-		io_context					&_context;
-		io_context::work			_work;
-		tcp::acceptor				_incoming;
 
 		void	removeClosedConnections()
 		{
@@ -147,8 +143,12 @@ class TServer : public TICallbackHandler<ConnectionType> {
 				}),
 				_connections.end()
 			);
-
 		}
+
+		io_context					&_context;
+		SessionHandle				_pending;
+		// io_context::work			_work;
+		tcp::acceptor				_incoming;
 
 };
 
