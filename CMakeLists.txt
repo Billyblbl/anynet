@@ -5,12 +5,17 @@ add_definitions("-fPIC")
 set(CMAKE_CXX_STANDARD 17)
 set(VERBOSE)
 
+if (UNIX)
+	set(THREADLIB pthread)
+elseif(WIN32)
+	set(THREADLIB "")
+endif(UNIX)
+
 #CONAN
 
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
 include_directories(${CMAKE_INCLUDE_PATH} ${CONAN_INCLUDE_DIRS} include)
-
 
 #SOURCE FETCHERS
 
@@ -51,11 +56,16 @@ endfunction(get_src)
 
 #TMP
 
-message(STATUS "Configuring [temporary bin lib] Build")
-get_include(TMP_INCLUDE tmp)
-get_src(TMP_SRC tmp)
-include_directories(${TMP_INCLUDE})
-add_library(tmp ${TMP_SRC})
+message(STATUS "Configuring exemple Build")
+get_include(CLIENT_INCLUDE exemple/client exemple/common)
+get_src(CLIENT_SRC exemple/client exemple/common)
+get_include(SERVER_INCLUDE exemple/server exemple/common)
+get_src(SERVER_SRC exemple/server exemple/common)
+include_directories(${CLIENT_INCLUDE} ${SERVER_INCLUDE})
+add_executable(exemple_client ${CLIENT_SRC})
+add_executable(exemple_server ${SERVER_SRC})
+target_link_libraries(exemple_client ${THREADLIB} ${CONANLIBS})
+target_link_libraries(exemple_server ${THREADLIB} ${CONANLIBS})
 
 
 #DOXYGEN
