@@ -61,7 +61,4 @@ class TICallbackHandler {
 	private:
 };
 
-template<typename MessageType>
-class TICallbackHandler<TConnection<MessageType>>;
-
 #endif /* !ICALLBACKHANDLER_HPP_ */
