@@ -16,7 +16,7 @@
 ///@brief Generic Connection object
 ///
 ///@tparam MessageType Defining data format
-/// @warning MessageType must define the void writeTo(std::vector<stsd:byte>) method, bool hasMessage(std::vector<std::byte>), and MessageType extract(std::vector<std::byte>)
+/// @warning MessageType must define the void writeTo(std::vector<std:byte>) method, bool hasMessage(std::vector<std::byte>), and MessageType extract(std::vector<std::byte>)
 ///
 ///@tparam BufferSize buffer size used on read operations
 ///
@@ -34,7 +34,7 @@ class TConnection {
 		///
 		struct RBuffer {
 			std::array<std::byte, BufferSize>	input;
-			std::vector<std::byte>		data;
+			std::vector<std::byte>				data;
 		};
 
 		///
@@ -71,7 +71,7 @@ class TConnection {
 		TConnection		&operator=(TConnection &&rhs) = delete;
 
 		///
-		///@brief Called when an acceptor links thhis connection to an incoming device tcp connection
+		///@brief Called when an acceptor links this connection to an incoming device tcp connection
 		///
 		///
 		void			onAccept()
@@ -116,6 +116,8 @@ class TConnection {
 			std::cerr << er << "\r\n";
 		}
 
+		virtual void	onDisconnect() {}
+
 		///
 		///@brief Writes message to the write buffer to enqueue for data transmission
 		///
@@ -150,6 +152,7 @@ class TConnection {
 		void			close()
 		{
 			_open = false;
+			onDisconnect();
 			boost::system::error_code ec;
 			_socket.shutdown(tcp::socket::shutdown_both, ec);
 			if (ec)
@@ -177,9 +180,9 @@ class TConnection {
 		void			connect(const std::string &address, int port)
 		{
 			_socket.connect(tcp::endpoint(boost::asio::ip::address::from_string(address), port));
+			onConnect();
 			startReceive();
 			startSend();
-			onConnect();
 		}
 
 	protected:

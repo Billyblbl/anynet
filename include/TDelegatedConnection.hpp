@@ -38,7 +38,7 @@ class TDelegatedConnection : public TConnection<MessageType> {
 		///@param handler Callback handler object
 		///
 		TDelegatedConnection(boost::asio::io_service &service, HandlerType &handler):
-			TConnection<MessageType, Metadata>(service),
+			TConnection<MessageType>(service),
 			_handler(&handler)
 		{}
 
