@@ -21,15 +21,22 @@
 ///
 ///@tparam MessageType type used to define the nature of the connection and its events
 ///
-template<typename MessageType>
+template<typename MessageType, typename CRTPToken = void>
 class TDelegatedConnection : public TConnection<MessageType> {
 	public:
+
+		using SelfType = std::conditional_t<
+			std::is_same_v<CRTPToken, void>,
+			TDelegatedConnection,
+			CRTPToken
+		>;
 
 		///
 		///@brief Callback handler interface type as defined by MessageType
 		///
 		///
-		using HandlerType = TICallbackHandler<TDelegatedConnection>;
+		using HandlerType = TICallbackHandler<SelfType>;
+
 
 		///
 		///@brief Construct a new TDelegatedConnection object
@@ -85,7 +92,7 @@ class TDelegatedConnection : public TConnection<MessageType> {
 		///
 		void	onMessage(const MessageType &message) final
 		{
-			_handler->onMessage(*this, message);
+			_handler->onMessage((SelfType &)*this, message);
 		}
 
 		///
@@ -94,7 +101,7 @@ class TDelegatedConnection : public TConnection<MessageType> {
 		///
 		void	onConnect() final
 		{
-			_handler->onConnect(*this);
+			_handler->onConnect((SelfType &)*this);
 		}
 
 		///
@@ -103,12 +110,12 @@ class TDelegatedConnection : public TConnection<MessageType> {
 		///
 		void	onError(const boost::system::error_code &er) final
 		{
-			_handler->onError(*this, er);
+			_handler->onError((SelfType &)*this, er);
 		}
 
 		void	onDisconnect() final
 		{
-			_handler->onDisconnect(*this);
+			_handler->onDisconnect((SelfType &)*this);
 		}
 
 	protected:

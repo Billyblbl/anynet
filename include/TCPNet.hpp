@@ -18,11 +18,11 @@ namespace TCPNet
 	template<typename MessageType>
 	using Client = TConnection<MessageType>;
 
-	template<typename MessageType>
-	using Session = TDelegatedConnection<MessageType>;
+	template<typename MessageType, typename CRTPToken = void>
+	using Session = TDelegatedConnection<MessageType, CRTPToken>;
 
 	template<typename T>
-	using Server = typename ServerImpl<T, isConnection<T>>::type;
+	using Server = typename ServerImpl<T, isConnection_v<T>>::type;
 
 } // namespace TCPNet
 

@@ -36,8 +36,8 @@ class TServer : public TICallbackHandler<ConnectionType> {
 		///
 		///@param port to listen on
 		///
-		TServer(int port, io_context &context):
-			_context(context),
+		TServer(int port):
+			// _context(context),
 			// _work(_context),
 			_incoming(_context)
 		{
@@ -51,6 +51,7 @@ class TServer : public TICallbackHandler<ConnectionType> {
 			_incoming.bind(endpoint);
 			_incoming.listen(boost::asio::socket_base::max_connections);
 			std::cout << "Listening on: " << endpoint << std::endl;
+			_open = true;
 			startAccept();
 		}
 
@@ -60,6 +61,7 @@ class TServer : public TICallbackHandler<ConnectionType> {
 		///
 		virtual ~TServer()
 		{
+			_open = false;
 			_context.stop();
 		}
 
@@ -99,6 +101,8 @@ class TServer : public TICallbackHandler<ConnectionType> {
 		///
 		void	poll()
 		{
+			if (!_open)
+				return;
 			try {
 				_context.poll();
 				removeClosedConnections();
@@ -109,10 +113,12 @@ class TServer : public TICallbackHandler<ConnectionType> {
 
 		void	run()
 		{
-			while(true) {
+			while(_open) {
 				poll();
 			}
 		}
+
+		void	close() {_open = false;}
 
 	protected:
 		std::vector<SessionHandle>	_connections;
@@ -124,7 +130,7 @@ class TServer : public TICallbackHandler<ConnectionType> {
 		///
 		void	startAccept()
 		{
-			if constexpr(std::is_base_of_v<TDelegatedConnection<typename ConnectionType::Message>, Connection>)
+			if constexpr(isConnection_v<Connection>)
 				_pending = std::make_shared<Connection>(_context, *this);
 			else
 				_pending = std::make_shared<Connection>(_context);
@@ -145,10 +151,11 @@ class TServer : public TICallbackHandler<ConnectionType> {
 			);
 		}
 
-		io_context					&_context;
+		io_context					_context;
 		SessionHandle				_pending;
 		// io_context::work			_work;
 		tcp::acceptor				_incoming;
+		bool						_open;
 
 };
 
@@ -164,11 +171,5 @@ template<typename MessageType>
 struct ServerImpl<MessageType, false> {
 	using type = TServer<TDelegatedConnection<MessageType>>;
 };
-
-template<typename T>
-constexpr bool	isConnection = false;
-
-template<typename MessageType>
-constexpr bool	isConnection<TConnection<MessageType>> = true;
 
 #endif /* !TSERVER_HPP_ */

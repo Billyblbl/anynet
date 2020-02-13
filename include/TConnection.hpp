@@ -12,6 +12,7 @@
 #include <vector>
 #include <iostream>
 #include <boost/asio.hpp>
+#include "IConnection.hpp"
 
 ///
 ///@brief Generic Connection object
@@ -22,7 +23,7 @@
 ///@tparam BufferSize buffer size used on read operations
 ///
 template<typename MessageType, std::size_t BufferSize = 1024>
-class TConnection {
+class TConnection : public IConnection {
 	public:
 
 		using tcp = boost::asio::ip::tcp;
@@ -165,6 +166,18 @@ class TConnection {
 		}
 
 		///
+		///@brief Preapre the connection to close when all outgoing data has been sent
+		///
+		///@param value stops closure if false
+		///
+		void			closeOnEmpty(bool value = true)
+		{
+			_closing = value;
+			if (_wBuffer.empty())
+				close();
+		}
+
+		///
 		///@brief Connection status Checker
 		///
 		///
@@ -233,6 +246,8 @@ class TConnection {
 					_wBuffer.erase(_wBuffer.begin(), _wBuffer.begin() + bytes);
 					if (!_wBuffer.empty())
 						startSend();
+					else if (_closing)
+						close();
 				} catch(const std::exception& e) {
 					std::cerr << __func__ << ' ' << e.what() << "\r\n";
 				}
@@ -242,6 +257,7 @@ class TConnection {
 
 		tcp::socket	_socket;
 		bool		_open;
+		bool		_closing;
 		RBuffer		_rBuffer;
 		WBuffer		_wBuffer;
 };

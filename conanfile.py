@@ -3,7 +3,7 @@ from conans import ConanFile, CMake
 
 class AnyNetConan(ConanFile):
 	settings = "os", "compiler", "build_type", "arch"
-	requires = "boost/1.71.0@conan/stable"
+	requires = "boost/1.71.0"
 	generators = "cmake"
 
 #	def imports(self):
