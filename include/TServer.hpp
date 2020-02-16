@@ -61,8 +61,8 @@ class TServer : public TICallbackHandler<ConnectionType> {
 		///
 		virtual ~TServer()
 		{
-			_open = false;
-			_context.stop();
+			if (isOpen())
+				close();
 		}
 
 		///
@@ -118,7 +118,15 @@ class TServer : public TICallbackHandler<ConnectionType> {
 			}
 		}
 
-		void	close() {_open = false;}
+		bool	isOpen() const
+		{
+			return _open;
+		}
+
+		void	close() {
+			_open = false;
+			_context.stop();
+		}
 
 	protected:
 		std::vector<SessionHandle>	_connections;
