@@ -13,9 +13,34 @@ endif(UNIX)
 
 #CONAN
 
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-conan_basic_setup()
-include_directories(${CMAKE_INCLUDE_PATH} ${CONAN_INCLUDE_DIRS} include)
+function(configure_conan DIR)
+	if(NOT EXISTS ${conan})
+		message(FATAL_ERROR "Conan is required.")
+	endif()
+
+	message(STATUS "Running conan in " ${DIR})
+
+	execute_process(COMMAND ${conan} install --build=missing ${DIR} RESULT_VARIABLE return_code)
+
+	if(NOT ${return_code} EQUAL 0)
+		message(FATAL_ERROR "conan install command failed.")
+	endif()
+
+	include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+	conan_basic_setup()
+	include_directories(${CMAKE_INCLUDE_PATH} ${CONAN_INCLUDE_DIRS} )#include
+
+	set(DEPENDENCIES ${DEPENDENCIES} ${CONAN_LIBS} PARENT_SCOPE)
+endfunction(configure_conan)
+
+
+# include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+# conan_basic_setup()
+# include_directories(${CMAKE_INCLUDE_PATH} ${CONAN_INCLUDE_DIRS} include)
+
+configure_conan(${CMAKE_CURRENT_LIST_DIR})
+
+include_directories(${CMAKE_CURRENT_LIST_DIR}/include)
 
 #SOURCE FETCHERS
 
@@ -56,16 +81,21 @@ endfunction(get_src)
 
 #TMP
 
-message(STATUS "Configuring exemple Build")
-get_include(CLIENT_INCLUDE exemple/client exemple/common)
-get_src(CLIENT_SRC exemple/client exemple/common)
-get_include(SERVER_INCLUDE exemple/server exemple/common)
-get_src(SERVER_SRC exemple/server exemple/common)
-include_directories(${CLIENT_INCLUDE} ${SERVER_INCLUDE})
-add_executable(exemple_client ${CLIENT_SRC})
-add_executable(exemple_server ${SERVER_SRC})
-target_link_libraries(exemple_client ${THREADLIB} ${CONANLIBS})
-target_link_libraries(exemple_server ${THREADLIB} ${CONANLIBS})
+option(BUILD_EX "Build exemple binaries" OFF)
+
+if (BUILD_EX)
+	message(STATUS "Configuring exemple Build")
+	get_include(CLIENT_INCLUDE exemple/client exemple/common)
+	get_src(CLIENT_SRC exemple/client exemple/common)
+	get_include(SERVER_INCLUDE exemple/server exemple/common)
+	get_src(SERVER_SRC exemple/server exemple/common)
+	include_directories(${CLIENT_INCLUDE} ${SERVER_INCLUDE})
+	add_executable(exemple_client ${CLIENT_SRC})
+	add_executable(exemple_server ${SERVER_SRC})
+	target_link_libraries(exemple_client ${THREADLIB} ${CONANLIBS})
+	target_link_libraries(exemple_server ${THREADLIB} ${CONANLIBS})
+endif(BUILD_EX)
+
 
 
 #DOXYGEN
