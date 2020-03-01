@@ -12,6 +12,7 @@
 #include <memory>
 #include <type_traits>
 #include <iomanip>
+#include <shared_mutex>
 #include <boost/asio.hpp>
 #include "TDelegatedConnection.hpp"
 #include "TICallbackHandler.hpp"
@@ -104,7 +105,10 @@ class TServer : public TICallbackHandler<ConnectionType> {
 			if (!_open)
 				return;
 			try {
-				_context.poll();
+				{
+					std::shared_lock	lock(_mut);
+					_context.poll();
+				}
 				removeClosedConnections();
 			} catch(const std::exception &e) {
 				std::cerr << e.what() << "\r\n";
@@ -114,7 +118,15 @@ class TServer : public TICallbackHandler<ConnectionType> {
 		void	run()
 		{
 			while(_open) {
-				poll();
+				try {
+					{
+						std::shared_lock	lock(_mut);
+						_context.run_one();
+					}
+					removeClosedConnections();
+				} catch(const std::exception &e) {
+					std::cerr << e.what() << "\r\n";
+				}
 			}
 		}
 
@@ -151,6 +163,7 @@ class TServer : public TICallbackHandler<ConnectionType> {
 
 		void	removeClosedConnections()
 		{
+			std::unique_lock	lock(_mut);
 			_connections.erase(
 				std::remove_if(_connections.begin(), _connections.end(), [](auto &connection){
 					return !connection->isOpen();
@@ -164,6 +177,7 @@ class TServer : public TICallbackHandler<ConnectionType> {
 		// io_context::work			_work;
 		tcp::acceptor				_incoming;
 		bool						_open;
+		std::shared_mutex			_mut;
 
 };
 
