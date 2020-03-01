@@ -8,6 +8,7 @@
 #ifndef TICALLBACKHANDLER_HPP_
 #define TICALLBACKHANDLER_HPP_
 
+#include <shared_mutex>
 #include <boost/asio.hpp>
 #include "TConnection.hpp"
 
@@ -56,6 +57,9 @@ class TICallbackHandler {
 		virtual void onError(Connection &connection, const boost::system::error_code &er) = 0;
 
 		virtual void onDisconnect(Connection &connection) = 0;
+
+		virtual	void	lock_shared() = 0;
+		virtual	void	unlock_shared() = 0;
 
 	protected:
 	private:

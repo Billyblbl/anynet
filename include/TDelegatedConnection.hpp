@@ -92,7 +92,11 @@ class TDelegatedConnection : public TConnection<MessageType> {
 		///
 		void	onMessage(const MessageType &message) final
 		{
+			// //std::cerr << std::string(__func__) + " shared locking\n" << std::endl;
+			std::shared_lock	lock(*_handler);
+			// //std::cerr << std::string(__func__) + " shared locked\n" << std::endl;
 			_handler->onMessage((SelfType &)*this, message);
+			// //std::cerr << std::string(__func__) + " shared unlocking (no idea when unlocked)\n" << std::endl;
 		}
 
 		///
@@ -101,7 +105,11 @@ class TDelegatedConnection : public TConnection<MessageType> {
 		///
 		void	onConnect() final
 		{
+			// //std::cerr << std::string(__func__) + " shared locking\n" << std::endl;
+			std::shared_lock	lock(*_handler);
+			// //std::cerr << std::string(__func__) + " shared locked\n" << std::endl;
 			_handler->onConnect((SelfType &)*this);
+			// //std::cerr << std::string(__func__) + " shared unlocking (no idea when unlocked)\n" << std::endl;
 		}
 
 		///
@@ -110,12 +118,20 @@ class TDelegatedConnection : public TConnection<MessageType> {
 		///
 		void	onError(const boost::system::error_code &er) final
 		{
+			//std::cerr << std::string(__func__) + " shared locking\n" << std::endl;
+			std::shared_lock	lock(*_handler);
+			//std::cerr << std::string(__func__) + " shared locked\n" << std::endl;
 			_handler->onError((SelfType &)*this, er);
+			//std::cerr << std::string(__func__) + " shared unlocking (no idea when unlocked)\n" << std::endl;
 		}
 
 		void	onDisconnect() final
 		{
+			//std::cerr << std::string(__func__) + " shared locking\n" << std::endl;
+			std::shared_lock	lock(*_handler);
+			//std::cerr << std::string(__func__) + " shared locked\n" << std::endl;
 			_handler->onDisconnect((SelfType &)*this);
+			//std::cerr << std::string(__func__) + " shared unlocking (no idea when unlocked)\n" << std::endl;
 		}
 
 	protected:

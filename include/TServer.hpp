@@ -96,6 +96,16 @@ class TServer : public TICallbackHandler<ConnectionType> {
 
 		virtual void onDisconnect(Connection &connection) override {(void)connection;}
 
+		virtual	void	lock_shared() override
+		{
+			return _mut.lock_shared();
+		}
+
+		virtual	void	unlock_shared() override
+		{
+			return _mut.unlock_shared();
+		}
+
 		///
 		///@brief
 		///
@@ -105,10 +115,7 @@ class TServer : public TICallbackHandler<ConnectionType> {
 			if (!_open)
 				return;
 			try {
-				{
-					std::shared_lock	lock(_mut);
-					_context.poll();
-				}
+				_context.poll();
 				removeClosedConnections();
 			} catch(const std::exception &e) {
 				std::cerr << e.what() << "\r\n";
@@ -119,10 +126,7 @@ class TServer : public TICallbackHandler<ConnectionType> {
 		{
 			while(_open) {
 				try {
-					{
-						std::shared_lock	lock(_mut);
-						_context.run_one();
-					}
+					_context.run_one();
 					removeClosedConnections();
 				} catch(const std::exception &e) {
 					std::cerr << e.what() << "\r\n";
@@ -155,9 +159,19 @@ class TServer : public TICallbackHandler<ConnectionType> {
 			else
 				_pending = std::make_shared<Connection>(_context);
 			_incoming.async_accept(_pending->getSocket(), [this, connection = _pending](const boost::system::error_code &ec){
-				_connections.emplace_back(_pending);
+				{
+					// std::cerr << "unique locking\n" << std::endl;
+					std::unique_lock	lock(_mut);
+					// std::cerr << "unique locked\n" << std::endl;
+					_connections.emplace_back(connection);
+					// std::cerr << "emplaced\n" << std::endl;
+					startAccept();
+					// std::cerr << "accept restarted\n" << std::endl;
+					// std::cerr << "unique unlocking\n" << std::endl;
+				}
+				// std::cerr << "unique unlocked\n" << std::endl;
 				connection->onAccept();
-				startAccept();
+				// std::cerr << "onAccpet notified\n" << std::endl;
 			});
 		}
 

@@ -52,7 +52,8 @@ class TConnection : public IConnection {
 		///
 		TConnection(io_context &context):
 			_socket(context),
-			_open(false)
+			_open(false),
+			_closing(false)
 		{}
 
 		TConnection(TConnection &&) = delete;
@@ -126,8 +127,12 @@ class TConnection : public IConnection {
 		///
 		void			send(const Message &message)
 		{
-			message.writeTo(_wBuffer);
-			startSend();
+			if (!_closing && _open) {
+				message.writeTo(_wBuffer);
+				startSend();
+			} else {
+				std::cerr << "canceling send on closing connection\n" << std::endl;
+			}
 		}
 
 		///
@@ -154,8 +159,10 @@ class TConnection : public IConnection {
 		///
 		void			close()
 		{
-			_open = false;
-			onDisconnect();
+			// std::cerr << "closing\n" << std::endl;
+			_closing = true;
+			//temporarily disabled for thread risks
+			// onDisconnect();
 			boost::system::error_code ec;
 			_socket.shutdown(tcp::socket::shutdown_both, ec);
 			if (ec)
@@ -163,6 +170,7 @@ class TConnection : public IConnection {
 			_socket.close(ec);
 			if (ec)
 				std::cerr << "E : " << ec << "\r\n";
+			_open = false;
 		}
 
 		///
@@ -172,6 +180,7 @@ class TConnection : public IConnection {
 		///
 		void			closeOnEmpty(bool value = true)
 		{
+			// std::cerr << "closing on empty\n" << std::endl;
 			_closing = value;
 			if (_wBuffer.empty())
 				close();
@@ -214,14 +223,16 @@ class TConnection : public IConnection {
 			auto handler = [this](const boost::system::error_code &er, size_t bytes){
 				try {
 					if (er) {
-						onError(er);
-						_open = false;
+						// onError(er);
+						//temporarily disabled for thread risks
+						// close();
 						return;
 					}
 					_rBuffer.data.insert(_rBuffer.data.end(), _rBuffer.input.begin(), _rBuffer.input.begin() + bytes);
 					if (Message::hasMessage(_rBuffer.data))
 						onMessage(Message::extractFrom(_rBuffer.data));
-					startReceive();
+					if (_open && !_closing)
+						startReceive();
 				} catch(const std::exception& e) {
 					std::cerr << __func__ << ' ' << e.what() << "\r\n";
 				}
@@ -239,8 +250,8 @@ class TConnection : public IConnection {
 			auto handler = [this](const boost::system::error_code &er, size_t bytes){
 				try {
 					if (er) {
-						onError(er);
-						_open = false;
+						//temporarily disabled for thread risks
+						// close();
 						return;
 					}
 					_wBuffer.erase(_wBuffer.begin(), _wBuffer.begin() + bytes);
